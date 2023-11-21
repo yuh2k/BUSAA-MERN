@@ -1,82 +1,85 @@
 <div id="login-status" data-logged-in="<%= isUserLoggedIn %>"></div>
-<h2 class="welcome">Deis Events</h2>
-<h3 class="proud">Take a look at our recent events!</h3>
-<div class="table-wrapper">
+<div class="main-content">
+    <article>
+        <p class="title">Events</p>
 
-    <table >
-        <thead>
-        <tr>
-            <th>Title</th>
-            <th>Location</th>
-            <th>RegistrationLink</th>
-            <th>Operations</th>
-        </tr>
-        </thead>
-        <tbody>
-        <% events.forEach(event => { %>
-        <tr>
-            <td><a href="<%= `/events/${event._id}`%>"><%= event.title %></a></td>
-            <td><%= event.location %></td>
-            <td><%= event.registrationLink %></td>
-            <td>
-            <a href="<%=`/events/${event._id}/edit` %>"class="button"> Edit </a>
-            &nbsp;
-            <a href="<%= `events/${event._id}/delete?_method=DELETE` %>"
-                onclick="return confirm('If the record has been deleted, it cannot be recovered')" class="button">Delete</a>
-            &nbsp;
-            
-            <a class="attend-btn" data-event-id="<%= event._id %>" id="button"">Join Event</a>
-            </td>
-        </tr>
-        <% }); %>
-        </tbody>
-    </table>
+        <p class="content">
+          The Brandeis Students and Alumni Association is a vibrant community that offers lifelong opportunities for students and alumni to stay connected to Brandeis and each other. 
+        We strive to make our events inclusive and accessible to all members of our community. Whether you are a current student, recent graduate, or seasoned alumni, we have something for you.</p>
+        <p class="content">Join us at our next event and experience the vibrant community of the Brandeis Students and Alumni Association!</p>
+        <a href="events/new" class="btn btn-primary btn-lg" style="background-color: #0D47A1;">Host a new event</a>
+    </article>
+    
+    <body>
+        <div class="container mt-5">
+          <p class="center-title">Current Events</p>
+          <div class="row">
+            <% events.forEach((event, index) => { %>
+              <div class="col-md-4">
+                <div class="card my-3">
+                    <div class="card-body">
+                        <p class="card-title"><%= event.title %></p>
+                        <p class="card-text"><%= event.organizer ? event.organizer.name : 'No organizer' %></p>
+                        <a class="btn btn-primary attend-btn" data-event-id="<%= event._id %>" style="background-color: #0D47A1;">Attend Event</a>
+                        <a href="/events/<%= event._id %>" class="btn btn-secondary" >View Event</a>
+                        
+                      </div>
+                      
+                </div>
+              </div>
+              <% if ((index + 1) % 3 === 0 && index !== events.length - 1) { %>
+                </div>
+                <div class="row">
+              <% } %>
+            <% }); %>
+          </div>
+        </div>
+      </body>
+</div>
+<div class="side">
+    <img src="https://www.brandeis.edu/university-events/images/home/mandel.jpg" 
+    width='130%' height='auto' alt="bran alum">
+</div>
 
-    </div>
-
-    <div class="button-wrapper">
-    <a href="events/new" class="btn btn-primary">Post events</a>
-    </div>
 
 
 <script>
     const isUserLoggedIn = document.getElementById('login-status').dataset.loggedIn === 'true';
     document.addEventListener('DOMContentLoaded', () => {
-        const attendButtons = document.querySelectorAll('.attend-btn');
-        attendButtons.forEach(button => {
+      const attendButtons = document.querySelectorAll('.attend-btn');
+      attendButtons.forEach(button => {
         button.addEventListener('click', () => {
-            if (!isUserLoggedIn) {
-                alert('Please log in to join the event.');
-                location.href = '/users/login';
-                return;
-              }
-            const eventId = button.dataset.eventId;
-            const userName = prompt('Please enter your name:');
-            
-            if (!userName) {
+          if (!isUserLoggedIn) {
+            alert('Please log in to join the event.');
+            location.href = '/users/login';
+            return;
+          }
+          const eventId = button.dataset.eventId;
+          const userName = prompt('Please enter your name:');
+          
+          if (!userName) {
             alert('Please enter your name to join the event.');
             return;
-            }
-
-            fetch(`/events/${eventId}/attend`, {
+          }
+  
+          fetch(`/events/${eventId}/attend`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ userName: userName })
-            }).then(response => {
+          }).then(response => {
             if (response.ok) {
-                alert('You have successfully joined the event!');
-                location.reload();
+              alert('You have successfully joined the event!');
+              location.reload();
             } else if (response.status === 404) {
-                alert('Your account does not exist, please create a new account!');
-                location.href = '/users/new';
+               alert('Your account does not exist, please create a new account!');
+              location.href = '/users/new';
             } else {
-                alert('An error occurred while joining the event. Please try again.');
+              alert('An error occurred while joining the event. Please try again.');
             }
-            });
+          });
         });
-        });
+      });
     });
-</script>
-<script src="/client.js"></script>
+  </script>

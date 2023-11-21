@@ -1,13 +1,16 @@
-const router = require("express").Router();
+const express = require("express");
+const router = express.Router();
 const eventsController = require("../controllers/eventsController");
-const checkLoggedIn = require('../checkLoginStatus');
-// Define routes for different actions related to events
-router.get('/',  eventsController.index, eventsController.indexView);
-router.get('/new', checkLoggedIn, eventsController.new);
-router.post('/', checkLoggedIn, eventsController.validateLink, eventsController.create, eventsController.redirectView);
+const usersController = require("../controllers/usersController");
+
+// Events routes
+router.get('/', eventsController.index, eventsController.indexView);
+router.get('/new', usersController.checkLogin, eventsController.new);
+router.post('/', usersController.checkLogin, eventsController.create, eventsController.redirectView);
 router.get('/:id', eventsController.show, eventsController.showView);
-router.get('/:id/edit', checkLoggedIn, eventsController.edit);
-router.put('/:id/update', checkLoggedIn, eventsController.update, eventsController.redirectView);
-router.delete('/:id/delete', checkLoggedIn, eventsController.delete, eventsController.redirectView);
-router.post("/:id/attend", checkLoggedIn, eventsController.attend);
+router.get('/:id/edit', usersController.checkLogin, eventsController.edit);
+router.put('/:id/update', usersController.checkLogin, eventsController.update, eventsController.redirectView);
+router.delete('/:id/delete', usersController.checkLogin, eventsController.delete, eventsController.redirectView);
+router.post("/:id/attend", usersController.checkLogin, eventsController.attend);
+
 module.exports = router;

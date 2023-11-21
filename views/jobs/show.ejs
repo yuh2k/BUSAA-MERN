@@ -1,10 +1,12 @@
-
 <body>
   <div class="wrapper">
     <div class="info">
-
-      <table>
-        <th>Title</th>
+      <br>
+      <h1 class="center-title"><%= job.title %> at <%= job.company %></h1>
+      <br>
+      <table class="table">
+        <tr>
+          <th>Title</th>
           <td><%= job.title %></td>
         </tr>
         <tr>
@@ -43,14 +45,13 @@
           <th>Deadline Date</th>
           <td><%= job.deadlineDate.toDateString() %></td>
         </tr>
-        
       </table>
     </div>
-    <div class="button-wrapper">
-      <a href="/jobs/<%= job._id %>/edit">Edit Job Details</a>
-      &nbsp;
-      <a href="<%= `/jobs/${job._id}/delete?_method=DELETE` %>" onclick="return confirm('Are you sure you want to delete this job?')">Delete</a>
+    <div></div>
+    <div class="buttons">
+      <a href="/jobs">View all jobs</a>
+      <a href="<%=`/jobs/${job._id}/edit`%>">Edit Job Details</a>
+      <a href="<%= `/jobs/${job._id}/delete?_method=DELETE` %>" onclick="return confirm('Are you sure you want to delete this record?')">Delete</a>
     </div>
   </div>
-
 </body>

@@ -1,9 +1,7 @@
 <div class="data-form">
   <br>
+  <p class="center-title">Create a new user</p>
   <form action="/users/create" method="POST">
-    <div>
-      <h2 class="welcome">Create a new user!</h2>
-    </div>
     <div>
       <label for="name">Name:<br></label>
       <input type="text" name="name" id="name" required>
@@ -54,7 +52,7 @@
     </div>
     <div>
       <label for="zipCode">Zip Code:<br></label>
-      <input type="number" name="zipCode" id="zipCode" min="10000" max="99999" required>
+      <input type="text" name="zipCode" id="zipCode" pattern="^[0-9]{5}$" required>
     </div>
     <div>
       <label for="bio">Bio:<br></label>
@@ -65,10 +63,6 @@
       <input type="text" name="interests" id="interests">
     </div>
     <div></div>
-    <div class="button-wrapper">
-      <button type="submit">Submit</button>
-    </div>
+    <button type="submit">Submit</button>
   </form>
-
 </div>
-

@@ -1,38 +1,42 @@
-<body>
-  <h2>Users Table</h2>
-<div class="table-wrapper">
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Zip Code</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% users.forEach(user => { %>
-      <tr>
-        <td><a href="<%= `/users/${user._id}`%>"><%= user.name %></a></td>
-        <td><%= user.email %></td>
-        <td><%= user.zipCode %></td>
-        <td>
-          <a href="<%=`/users/${user._id}/edit` %>" class = "button"> Edit </a>
-          <a
-          href="<%= `users/${user._id}/delete?_method=DELETE` %>"
-          onclick="return confirm('If the record has been deleted, it cannot be recovered')"
-          class = "button">Delete</a>
-        </td>
-  
-      </tr>
-      <% }); %>
-    </tbody>
-  </table>
-  </div>
+<div class="main-content">
+    <article>
+        <p class="title">Current members of Brandeis SAA</p>
+        <!-- <p class="subtitle">Student & Alumni of Brandeis University</p>
+        <p class="content">
+          The Brandeis Students and Alumni Association is a vibrant community that offers lifelong opportunities for students and alumni to stay connected to Brandeis and each other. 
+        </p> -->
+    </article>
 
-  <div class="button-wrapper">
-    <a class="btn btn-primary" href="/users/new">New user</a>
+
+    <article>
+        <table class="table">
+        <thead>
+            <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Graduation Year</th>
+            <th>Zip Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% users.forEach(user => { %>
+              <tr>
+              <td><a href="<%= `/users/${user._id}`%>"><%= user.name %> </a></td>
+              <td><%= user.email %></td>
+              <td><%= user.graduationYear %></td>
+              <td><%= user.zipCode %></td>
+              </tr>
+            <% }); %>
+        </tbody>
+        </table>
+    </article>
+
+
+    
 </div>
-  
+<div class="side">
+    <img src="https://alumni.brandeis.edu/giving/recognition/images/students-toss-caps-960.jpg" 
+    width='130%' height='auto' alt="bran alum">
 </div>
-</body>
+
+
