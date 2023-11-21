@@ -1,9 +1,10 @@
+// Require necessary models
 const Event = require("../models/event");
 const User = require("../models/user");
-const { check, validationResult, isURL } = require("express-validator");
+const { check, validationResult } = require("express-validator");
 const httpStatus = require("http-status-codes");
-const checkLogin = require('../checkLoginStatus');
-// Function to extract event parameters from the request body
+
+// Get event parameters from request body
 const getEventParams = (body) => {
   return {
     title: body.title,
@@ -17,6 +18,8 @@ const getEventParams = (body) => {
     attendees: body.attendees,
   };
 };
+
+// Validation rules
 const eventValidationRules = () => {
   return [
     check("title").notEmpty().withMessage("Title is required."),
@@ -25,10 +28,29 @@ const eventValidationRules = () => {
       .optional({ checkFalsy: true })
       .isURL()
       .withMessage("Registration link must be a valid URL."),
+    check("endDate").notEmpty().withMessage("End date is required.")
+    .custom((value, { req }) => {
+      if (value < req.body.startDate) {
+        throw new Error("Start date cannot later than end date.");
+      }
+      return true;
+    })
   ];
 };
+
+// Check if the user is already logged in
+const checkLogin = (req, res) => {
+  if (!req.isAuthenticated()) {
+    req.flash('error', 'You must be logged in to access jobs.');
+    res.redirect('/users/login');
+    return false;
+  }
+  return true;
+};
+
+// Define event controller methods
 module.exports = {
-  // Fetch and display all events
+  // List all events
   index: (req, res, next) => {
     Event.find({})
       .populate("organizer attendees")
@@ -43,36 +65,17 @@ module.exports = {
       });
   },
 
-  // Render the events index view
+  // Render event index view
   indexView: (req, res) => {
-    res.render("events/index", { events: res.locals.events });
+    res.render("events/index");
   },
 
-  respondJSON: (req, res) => {
-    res.json({
-      status: httpStatus.OK,
-      data: res.locals,
-    });
-  },
-  errorJSON: (error, req, res, next) => {
-    let errorObject;
-    if (error) {
-      errorObject = {
-        status: httpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message,
-      };
-    } else {
-      errorObject = {
-        status: httpStatus.INTERNAL_SERVER_ERROR,
-        message: "Unknown Error.",
-      };
-    }
-    res.json(errorObject);
-  },
-  // Render the new event form with a list of users
+  // Render new event form
   new: async (req, res) => {
     try {
-      const users = await User.find({}); 
+      if (!checkLogin(req, res)) return;
+
+      let users = await User.find({});
       if (!Array.isArray(users)) {
         users = [users];
       }
@@ -83,118 +86,32 @@ module.exports = {
     }
   },
 
-  // Create a new event and handle success or error scenarios
-  create:  (req, res, next) => {
-    // const errors = validationResult(req);
-
-    // if (!errors.isEmpty()) {
-    //   const extractedErrors = [];
-    //   errors.array().map(err => extractedErrors.push({ [err.param]: err.msg}));
-    //   req.flash('error', extractedErrors);
-    //   return res.redirect('/events/new');
-    // }
-    let eventParams = getEventParams(req.body);
-
-    Event.create(eventParams)
-      .then((event) => {
-        req.flash(
-          "success",
-          `${event.title} event created successfully!`
-        );
-        res.locals.redirect = "/events";
-        res.locals.event = event;
-        next();
-      })
-      .catch((error) => {
-        console.log(`Error saving event: ${error.message}`);
-        res.locals.redirect = "/events/new";
-        req.flash(
-          "error",
-          `Failed to create event because: ${error.message}`
-        );
-        next();
-      });
-  },
-  validateLink: [
-    check("registrationLink")
-      .isURL()
-      .withMessage("Please enter a valid link."),
-    (req, res, next) => {
-      const errors = validationResult(req);
-  
-      if (!errors.isEmpty()) {
-        const extractedErrors = errors.array().map((err) => err.msg).join(', ');
-        req.flash("error", extractedErrors);
-        return res.redirect("/events/new");
-      }
-      next();
-    },
-  ],
-  // Redirect to the appropriate view after an operation
-  redirectView: (req, res, next) => {
-    let redirectPath = res.locals.redirect;
-    if (redirectPath) res.redirect(redirectPath);
-    else next();
-  },
-
-
-  // Render the event show view
-  showView: (req, res) => {
-    res.render("events/show");
-  },
-
-  // Render the event edit form with the event and user data
-  edit: async (req, res, next) => {
-    let eventId = req.params.id;
+  // Create a new event
+  create: async (req, res, next) => {
     try {
-      const event = await Event.findById(eventId);
-      const users = await User.find({});
-      res.render("events/edit", {
-        event: event,
-        users: users,
-      });
-    } catch (error) {
-      console.log(`Error fetching event or users by ID: ${error.message}`);
-      next(error);
-    }
-  },
-
-  // Update an event and handle success or error scenarios
-  update: async(req, res, next) => {
-    try {
+      if (!checkLogin(req, res)) return;
       await Promise.all(eventValidationRules().map((rule) => rule.run(req)));
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
         const extractedErrors = errors.array().map((err) => err.msg).join(', ');
         req.flash("error", extractedErrors);
-        return res.redirect(`/events/${req.params.id}/edit`);
+        return res.redirect("/events/new");
       }
+  
 
-    let eventId = req.params.id,
-      eventParams = {
-        title: req.body.title,
-        description: req.body.description,
-        location: req.body.location,
-        startDate: req.body.startDate,
-        endDate: req.body.endDate,
-        isOnline: req.body.isOnline,
-        registrationLink: req.body.registrationLink,
-        organizer: req.body.organizer,
-        attendees: req.body.attendees,
-      };
-    Event.findByIdAndUpdate(eventId, {
-      $set: eventParams,
-    })
-      .then((event) => {
-        res.locals.redirect = `/events/${eventId}`;
-        res.locals.event = event;
-        next();
-      })
-      .catch((error) => {
-        console.log(`Error updating event by ID: ${error.message}`);
-        req.flash("error", `Failed to update event because: ${error.message}`);
-          res.locals.redirect = `/events/${eventId}/edit`;
+      let eventParams = getEventParams(req.body);
+      Event.create(eventParams)
+        .then((event) => {
+          req.flash("success", `${event.title} event created successfully!`);
+          res.locals.redirect = "/events";
+          res.locals.event = event;
+          next();
+        })
+        .catch((error) => {
+          console.log(`Error saving event: ${error.message}`);
+          res.locals.redirect = "/events/new";
+          req.flash("error", `Failed to create event because: ${error.message}`);
           next();
         });
     } catch (error) {
@@ -203,14 +120,16 @@ module.exports = {
     }
   },
 
-   // Redirect to the appropriate view after an operation
-   redirectView: (req, res, next) => {
+  
+
+  // Redirect to specified URL
+  redirectView: (req, res, next) => {
     let redirectPath = res.locals.redirect;
     if (redirectPath) res.redirect(redirectPath);
     else next();
   },
 
-  // Fetch and display a single event
+  // Show a single event
   show: (req, res, next) => {
     let eventId = req.params.id;
     Event.findById(eventId)
@@ -225,16 +144,16 @@ module.exports = {
       });
   },
 
-  // Render the event show view
+  // Render event detail view
   showView: (req, res) => {
     res.render("events/show");
   },
 
-  // Render the event edit form with the event and user data
+  // Render edit event form
   edit: async (req, res, next) => {
     let eventId = req.params.id;
     try {
-      
+      if (!checkLogin(req, res)) return;
       const event = await Event.findById(eventId);
       const users = await User.find({});
       res.render("events/edit", {
@@ -246,10 +165,58 @@ module.exports = {
       next(error);
     }
   },
+  
+  // Update an existing event
+  update: async (req, res, next) => {
+    try {
+      if (!checkLogin(req, res)) return;
+      await Promise.all(eventValidationRules().map((rule) => rule.run(req)));
+      const errors = validationResult(req);
 
-  // Delete an event and handle success or error scenarios
+      if (!errors.isEmpty()) {
+        const extractedErrors = errors.array().map((err) => err.msg).join(', ');
+        req.flash("error", extractedErrors);
+        return res.redirect(`/events/${req.params.id}/edit`);
+      }
+
+      let eventId = req.params.id,
+        eventParams = {
+          title: req.body.title,
+          description: req.body.description,
+          location: req.body.location,
+          startDate: req.body.startDate,
+          endDate: req.body.endDate,
+          isOnline: req.body.isOnline,
+          registrationLink: req.body.registrationLink,
+          organizer: req.body.organizer,
+          attendees: req.body.attendees,
+        };
+
+      Event.findByIdAndUpdate(eventId, {
+        $set: eventParams,
+      })
+        .then((event) => {
+          req.flash("success", `${event.title} event updated successfully!`);
+          res.locals.redirect = `/events/${eventId}`;
+          res.locals.event = event;
+          next();
+        })
+        .catch((error) => {
+          console.log(`Error updating event by ID: ${error.message}`);
+          req.flash("error", `Failed to update event because: ${error.message}`);
+          res.locals.redirect = `/events/${eventId}/edit`;
+          next();
+        });
+    } catch (error) {
+      console.log(`Error during validation: ${error.message}`);
+      next(error);
+    }
+  },
+
+
+  // Delete an existing event
   delete: (req, res, next) => {
-    
+    if (!checkLogin(req, res)) return;
     let eventId = req.params.id;
     Event.findByIdAndRemove(eventId)
       .then(() => {
@@ -270,13 +237,16 @@ module.exports = {
     });
   },
 
-  // Add a user to the attendees list for an event
-  attend: async (req, res, next) => {
+  // Add a user to the attendees list of an event
+  attend: async (req, res) => {
+    if (!checkLogin(req, res)) return;
     try {
       const eventId = req.params.id;
       const userName = req.body.userName;
       const user = await User.findOne({ name: userName });
-  
+      if (!checkLogin(req, res)) {
+        return;
+      }
       if (!user) {
         res.status(404).send("User not found");
         return;
@@ -293,5 +263,30 @@ module.exports = {
       console.log(`Error attending event: ${error.message}`);
       res.status(500).send("Internal Server Error");
     }
-  }
+  },
+
+  respondJSON: (req, res) => {
+    res.json({
+      status: httpStatus.OK,
+      data: res.locals,
+    });
+  },
+
+  errorJSON: (error, req, res, next) => {
+    let errorObject;
+    if (error) {
+      errorObject = {
+        status: httpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      };
+    } else {
+      errorObject = {
+        status: httpStatus.INTERNAL_SERVER_ERROR,
+        message: "Unknown Error.",
+      };
+    }
+    res.json(errorObject);
+  },
 };
+    
+

@@ -1,0 +1,42 @@
+<!-- views/partials/navbar.ejs -->
+<nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/contact">Contact</a></li>
+      <% if (!loggedIn) { %>
+        <li><a href="/users/new">Sign Up</a></li>
+        <li><a href="/users/login">Sign In</a></li>
+      <% } else { %>
+        <li><a href="/users/logout">Log Out</a></li>
+      <% } %>
+    </ul>
+  </nav>
+
+
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/jobs">Jobs</a></li>
+      <li><a href="/events">Events</a></li>
+      <li><a href="/contact">Contact</a></li>
+     </ul>
+
+     <% if (!loggedIn) { %>
+        <ul>
+            <button href="/users/signin" type="button" class="btn btn-outline-light"><b>Sign in</b></button>
+            <div>&nbsp;&nbsp;&nbsp;</div>
+            <button href="/users/signup" type="button" class="btn btn-outline-light"><b>Sign Up</b></button>
+            <div>&nbsp;</div>
+        </ul>
+      <% } else { %>
+        <ul>
+            <p><% user.name></p>
+            <button href="/users/logout" type="button" class="btn btn-outline-light"><b>Log out</b></button>
+            <div>&nbsp;</div>
+        </ul>
+      <% } %>
+
+
+  </nav>

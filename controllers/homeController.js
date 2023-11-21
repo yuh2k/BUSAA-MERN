@@ -1,19 +1,19 @@
-// Render the "about" view
-exports.viewAbout = (req, res) => {
-  res.render("about", { user: req.user, loggedIn: !!req.user });
-};
-
-// Render the "contact" view
-exports.viewContact = (req, res) => {
-  res.render("contact", { user: req.user, loggedIn: !!req.user });
-};
-
-
-// Render the "index" view
+// Render index page
 exports.viewIndex = (req, res) => {
-  res.render("index", { user: req.user });
+    res.render("index");
+};
+    
+// Render about page
+exports.viewAbout = (req, res) => {
+    res.render("about");
+};
+    
+// Render contact page
+exports.viewContact = (req, res) => {
+    res.render("contact");
 };
 
-exports.chat = (req, res) => {
-  res.render("chat");
+// Render contact page
+exports.viewChat = (req, res) => {
+    res.render("chat");
 };

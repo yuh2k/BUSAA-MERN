@@ -1,7 +1,7 @@
-// Import Job model
-const Job = require("../models/job");
-const { check, validationResult } = require("express-validator");
-// Helper function to get job parameters from request body
+const Job = require("../models/job");// Require the Job model
+const { body, validationResult } = require('express-validator'); // Add this line to import the express-validator functions
+
+// Function to extract job parameters from the request body
 const getJobParams = (body) => {
   return {
     title: body.title,
@@ -17,41 +17,56 @@ const getJobParams = (body) => {
     isActive: body.isActive,
   };
 };
+
+// Validation rules
 const jobValidationRules = () => {
   return [
-    check("title").notEmpty().withMessage("Title is required."),
-    check("company").notEmpty().withMessage("Company name is required."),
-    check("location").notEmpty().withMessage("Job location is required."),
-    check("description").notEmpty().withMessage("Description is required."),
-    check("requirements").notEmpty().withMessage("Requirements are required."),
-    check("salary").notEmpty().withMessage("Salary is required."),
-    check("contactEmail")
-      .optional({ checkFalsy: true })
-      .isEmail()
-      .withMessage("Contact email must be a valid email address."),
-    check("contactPhone")
+    body("title").notEmpty().withMessage("Job title is required."),
+    body("company").notEmpty().withMessage("Company name is required."),
+    body("location").notEmpty().withMessage("Location is required."),
+    body("description").notEmpty().withMessage("Job description is required."),
+    body("requirements").notEmpty().withMessage("Job requirements are required."),
+    body("contactEmail").isEmail().withMessage("Contact email must be a valid email."),
+    body("contactPhone")
       .optional({ checkFalsy: true })
       .isMobilePhone()
-      .withMessage("Contact phone number must be a valid phone number."),
-    check("postDate")
-      .optional({ checkFalsy: true })
-      .isDate()
-      .withMessage("Post date must be a valid date."),
-    check("deadlineDate")
-      .optional({ checkFalsy: true })
-      .isDate()
-      .withMessage("Deadline date must be a valid date."),
+      .withMessage("Contact phone number must be a valid mobile number."),
+    body("postDate").isISO8601().withMessage("Post date must be a valid date."),
+    body("deadlineDate").isISO8601().withMessage("Deadline date must be a valid date."),
+
+    body("deadlineDate").notEmpty().withMessage("Deadline date is required.")
+    .custom((value, { req }) => {
+      if (value < req.body.postDate) {
+        throw new Error("Post date cannot later than deadline date.");
+      }
+      return true;
+    })
   ];
 };
 
-// Define controller methods
+
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (errors.isEmpty()) {
+    return next();
+  }
+
+  const extractedErrors = [];
+  errors.array().map(err => extractedErrors.push({ [err.param]: err.msg }));
+
+  req.flash('error', extractedErrors);
+  res.redirect(req.originalUrl);
+};
+
+
+// Export an object with controller functions for job-related routes
 module.exports = {
-  // Fetch all jobs and save them to res.locals.jobs
+
+
   index: (req, res, next) => {
     Job.find({})
       .then((jobs) => {
         res.locals.jobs = jobs;
-        res.locals.isUserLoggedIn = req.isAuthenticated(); 
         next();
       })
       .catch((error) => {
@@ -60,63 +75,63 @@ module.exports = {
       });
   },
 
-  // Render index view
+  // Index function to retrieve all jobs
   indexView: (req, res) => {
     
     res.render("jobs/index");
   },
 
-  // Render new job form
+  // Render the job creation page
   new: (req, res) => {
     
     res.render("jobs/new");
   },
 
-  // Create a new job using request body parameters
-  create: (req, res, next) => {
-    const errors = validationResult(req);
+  
+  // Create a new job
+  create: async (req, res, next) => {
+    try {
+      
+      await Promise.all(jobValidationRules().map((rule) => rule.run(req)));
+      const errors = validationResult(req);
 
-    
-    if (!errors.isEmpty()) {
-      const extractedErrors = errors.array().map((err) => err.msg).join(', ');
-      req.flash("error", extractedErrors);
-      return res.redirect("/events/new");
+      if (!errors.isEmpty()) {
+        const extractedErrors = errors.array().map((err) => err.msg).join(', ');
+        req.flash("error", extractedErrors);
+        return res.redirect("/jobs/new");
+      }
+
+      let jobParams = getJobParams(req.body);
+
+      Job.create(jobParams)
+        .then((job) => {
+          req.flash("success", `${job.title} position posted successfully!`);
+          res.locals.redirect = "/jobs";
+          res.locals.job = job;
+          next();
+        })
+        .catch((error) => {
+          console.log(`Error saving job: ${error.message}`);
+          req.flash("error", `Failed to post job because: ${error.message}`);
+          res.locals.redirect = "/jobs/new";
+          next();
+        });
+    } catch (error) {
+      console.log(`Error during validation: ${error.message}`);
+      next(error);
     }
-    let jobParams = getJobParams(req.body);
-
-    Job.create(jobParams)
-      .then((job) => {
-        req.flash(
-          "success",
-          `${job.title} was posted successfully!`
-        );
-        res.locals.redirect = "/jobs/";
-        res.locals.job = job;
-        next();
-      })
-      .catch((error) => {
-        console.log(`Error: ${error.message}`);
-        res.locals.redirect = "/jobs/new";
-        req.flash(
-          "error",
-          `Failed because: ${error.message}`
-        );
-        next(error);
-      });
   },
 
-  // Handle redirection
+  // Redirect to the specified redirect path, if any
   redirectView: (req, res, next) => {
     let redirectPath = res.locals.redirect;
-    if (redirectPath) {
-      res.redirect(redirectPath);
-    } else {
-      next();
-    }
+    if (redirectPath) res.redirect(redirectPath);
+    else next();
   },
 
-  // Fetch a job by ID and save it to res.locals.job
+  // Show a single job by ID
   show: (req, res, next) => {
+    
     let jobId = req.params.id;
     Job.findById(jobId)
       .then((job) => {
@@ -129,13 +144,13 @@ module.exports = {
       });
   },
 
-  // Render show view
+  // Render the job detail page
   showView: (req, res) => {
     
     res.render("jobs/show");
   },
 
-  // Fetch a job by ID and render edit view with the fetched job
+  // Render the job edit page
   edit: (req, res, next) => {
     
     let jobId = req.params.id;
@@ -151,44 +166,47 @@ module.exports = {
       });
   },
 
-  update: (req, res, next) => {
-    // Get the job ID from the request parameters and the job parameters from the request body
-    let jobId = req.params.id,
-      jobParams = {
-        title: req.body.title,
-        company: req.body.company,
-        location: req.body.location,
-        description: req.body.description,
-        requirements: req.body.requirements,
-        salary: req.body.salary,
-        contactEmail: req.body.contactEmail,
-        contactPhone: req.body.contactPhone,
-        postDate: req.body.postDate,
-        deadlineDate: req.body.deadlineDate,
-        isActive: req.body.isActive,
-      };
-    // Use Mongoose's findByIdAndUpdate method to update the job by ID
-    Job.findByIdAndUpdate(jobId, {
-      $set: jobParams,
-    })
-      .then((job) => {
-        // Set the redirect URL and job object on the response locals object and move to the next middleware
-        res.locals.redirect = `/jobs/${jobId}`;
-        res.locals.job = job;
-        next();
+  // Update an existing job
+  update: async (req, res, next) => {
+    try {
+      
+      await Promise.all(jobValidationRules().map((rule) => rule.run(req)));
+      const errors = validationResult(req);
+
+      if (!errors.isEmpty()) {
+        const extractedErrors = errors.array().map((err) => err.msg).join(', ');
+        req.flash("error", extractedErrors);
+        return res.redirect(`/jobs/${req.params.id}/edit`);
+      }
+
+      let jobId = req.params.id,
+        jobParams = getJobParams(req.body);
+
+      Job.findByIdAndUpdate(jobId, {
+        $set: jobParams,
       })
-      .catch((error) => {
-        // Log any errors and move to the next middleware
-        console.log(`Error updating job by ID: ${error.message}`);
-        next(error);
-      });
+        .then((job) => {
+          req.flash("success", `${job.title} position updated successfully!`);
+          res.locals.redirect = `/jobs/${jobId}`;
+          res.locals.job = job;
+          next();
+        })
+        .catch((error) => {
+          console.log(`Error updating job by ID: ${error.message}`);
+          req.flash("error", `Failed to update job because: ${error.message}`);
+          res.locals.redirect = `/jobs/${jobId}/edit`;
+          next();
+        });
+    } catch (error) {
+      console.log(`Error during validation: ${error.message}`);
+      next(error);
+    }
   },
-  
+
+  // Delete the job
   delete: (req, res, next) => {
     
-    // Get the job ID from the request parameters
     let jobId = req.params.id;
-    // Use Mongoose's findByIdAndRemove method to delete the job by ID
     Job.findByIdAndRemove(jobId)
       .then(() => {
         res.locals.redirect = "/jobs";
@@ -198,6 +216,15 @@ module.exports = {
         console.log(`Error deleting job by ID: ${error.message}`);
         next();
       });
-  }
+  },
   
+  // Check if the user is already logged in
+  checkLogin: (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      req.flash('error', 'You must be logged in to access jobs.');
+      res.redirect('/users/login');
+    } else {
+      next();
+    }
+  },
 };

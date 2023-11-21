@@ -1,29 +1,23 @@
 // Import required modules
-const axios = require("axios");
 const mongoose = require("mongoose");
 const express = require('express');
 const layouts = require("express-ejs-layouts");
 const connectFlash = require('connect-flash');
 const methodOverride = require("method-override");
 const expressSession = require("express-session");
-const expressValidator = require("express-validator");
-const { body, validationResult } = require('express-validator');
 const passport = require("passport");
 const User = require("./models/user");
 const cookieParser = require("cookie-parser");
-const checkLoggedIn = require('./checkLoginStatus');
-// const checkToken = require('./client');
+const router = require('./routes/index');
 const socketio = require("socket.io");
-// Import controllers
-const chatController = require('./controllers/chatController');
-const jwt = require("jsonwebtoken");
-const router = require("./routes/index");
-// const { ensureAuthenticated } = require('../config/auth');
-// Initialize Express app and router
+const chatController = require("./controllers/chatController");
+
+// Initialize Express app
 const app = express();
-const auth = require('./middleware/auth');
+const PORT = process.env.PORT || 3000;
+
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/brandeis_saa');
+mongoose.connect('mongodb://localhost:27017/brandeis_saa');
 
 // Middleware configuration
 app.set('view engine', 'ejs');
@@ -31,12 +25,14 @@ app.use(express.static("public"));
 app.use(layouts);
 app.use(cookieParser("secret_passcode"));
 
+// Method override configuration for POST, GET, PUT, DELETE
 app.use(
   methodOverride("_method", {
     methods: ["POST", "GET", "PUT", "DELETE"],
   })
 );
 
+// Express session configuration
 app.use(
   expressSession({
     secret: "secret_passcode",
@@ -51,45 +47,34 @@ app.use(connectFlash());
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Passport configuration for User authentication
 passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+// Set global variables for views
 app.use((req, res, next) => {
   res.locals.flashMessages = req.flash();
   res.locals.loggedIn = req.isAuthenticated();
-  res.locals.user = req.user;
+  res.locals.currentUser = req.user;
   next();
 });
 
-// Token authentication
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, "secret_key", (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-}
 // Configure app to use JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(expressValidator());
+// Use the routes in the app
+app.use('/', router);
+// app.use('/users', userRoutes);
+// app.use('/events', eventRoutes);
+// app.use('/jobs', jobRoutes);
 
-// Use router in the app
-app.use("/", router);
-// // Start the server
-const port = process.env.PORT || 3000;
-const server = app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+
+// Start the server
+
+const server = app.listen(PORT, () => {
+  console.log("application is running");
 });
 const io = socketio(server);
 chatController(io);
-
-
-
-

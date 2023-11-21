@@ -1,38 +1,38 @@
-
 const mongoose = require("mongoose");
 const Message = require("../models/message");
+
+// Create a new ObjectId to represent the system user
 const systemUserId = new mongoose.Types.ObjectId();
 
 module.exports = (io) => {
   io.on("connection", (client) => {
-    // console.log("new connection");
 
+    // Get the user's name from the query string of the handshake
     const userName = client.handshake.query.userName;
-    // console.log("Username:", userName);
+
+    // Create a join message and broadcast it to all connected clients
     const joinMessage = {
       content: `A user joined the chat`,
       userName: "[Notice]",
       user: systemUserId,
     };
-  
     Message.create(joinMessage).then(() => {
       io.emit("message", joinMessage);
     });
   
+    // When the client disconnects, create a leave message and broadcast it to all other clients
     client.on("disconnect", () => {
       const leaveMessage = {
         content: `A user left the chat`,
         userName: "[Notice]",
         user: systemUserId,
       };
-  
       Message.create(leaveMessage).then(() => {
         client.broadcast.emit("message", leaveMessage);
       });
-  
-      console.log("user disconnected");
     });
 
+    // When the client sends a message, store it in the database and broadcast it to all other clients
     client.on("message", (data) => {
       let messageAttributes = {
         content: data.content,
@@ -48,6 +48,7 @@ module.exports = (io) => {
         });
     });
 
+    // When a new client connects, send the 20 most recent messages to that client
     Message.find({})
       .sort({ createdAt: -1 })
       .limit(20)

@@ -1,6 +1,4 @@
-// Importing the 'http-status-codes' module
 const statusCodes = require("http-status-codes");
-
 
 // Respond with a 404 error page for resource not found
 exports.respondSourceNotFound = (req, res) => {
