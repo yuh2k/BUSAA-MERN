@@ -73,8 +73,8 @@ app.use('/', router);
 
 // Start the server
 
-const server = app.listen(PORT, () => {
-  console.log("application is running");
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Application running on port ${PORT}`);
 });
 const io = socketio(server);
 chatController(io);
