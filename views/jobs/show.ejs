@@ -1,0 +1,56 @@
+
+<body>
+  <div class="wrapper">
+    <div class="info">
+
+      <table>
+        <th>Title</th>
+          <td><%= job.title %></td>
+        </tr>
+        <tr>
+          <th>Company</th>
+          <td><%= job.company %></td>
+        </tr>
+        <tr>
+          <th>Location</th>
+          <td><%= job.location %></td>
+        </tr>
+        <tr>
+          <th>Description</th>
+          <td><%= job.description %></td>
+        </tr>
+        <tr>
+          <th>Requirements</th>
+          <td><%= job.requirements %></td>
+        </tr>
+        <tr>
+          <th>Salary</th>
+          <td>hourly $<%= job.salary %></td>
+        </tr>
+        <tr>
+          <th>Contact Email</th>
+          <td><%= job.contactEmail %></td>
+        </tr>
+        <tr>
+          <th>Contact Phone</th>
+          <td><%= job.contactPhone %></td>
+        </tr>
+        <tr>
+          <th>Post Date</th>
+          <td><%= job.postDate.toDateString() %></td>
+        </tr>
+        <tr>
+          <th>Deadline Date</th>
+          <td><%= job.deadlineDate.toDateString() %></td>
+        </tr>
+        
+      </table>
+    </div>
+    <div class="button-wrapper">
+      <a href="/jobs/<%= job._id %>/edit">Edit Job Details</a>
+      &nbsp;
+      <a href="<%= `/jobs/${job._id}/delete?_method=DELETE` %>" onclick="return confirm('Are you sure you want to delete this job?')">Delete</a>
+    </div>
+  </div>
+
+</body>

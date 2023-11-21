@@ -1,0 +1,38 @@
+<body>
+  <h2>Users Table</h2>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Zip Code</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(user => { %>
+      <tr>
+        <td><a href="<%= `/users/${user._id}`%>"><%= user.name %></a></td>
+        <td><%= user.email %></td>
+        <td><%= user.zipCode %></td>
+        <td>
+          <a href="<%=`/users/${user._id}/edit` %>" class = "button"> Edit </a>
+          <a
+          href="<%= `users/${user._id}/delete?_method=DELETE` %>"
+          onclick="return confirm('If the record has been deleted, it cannot be recovered')"
+          class = "button">Delete</a>
+        </td>
+  
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="button-wrapper">
+    <a class="btn btn-primary" href="/users/new">New user</a>
+</div>
+  
+</div>
+</body>

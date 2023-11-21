@@ -1,0 +1,15 @@
+<% if (user) { %>
+  <h1>Chat</h1>
+  <form id="chatForm">
+    <input id="chat-input" type="text" />
+    <input
+      id="chat-user-name"
+      type="hidden"
+      value="<%= user.name %>"
+    />
+    <input id="chat-user-id" type="hidden" value="<%= user._id %>" />
+    <input type="submit" value="Send" />
+  </form>
+  <ul id="chat"></ul>
+<% } %>
+  

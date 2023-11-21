@@ -1,0 +1,41 @@
+<body>
+    
+<h2 class="welcome">Job List</h2>
+<h3 class="proud">Take a look at our posted jobs!</h3>
+
+<div class="table-wrapper">
+
+        <table>
+            <thead>
+                <tr>
+                <th>Title</th>
+                <th>Company</th>
+                <th>Location</th>
+                <th>Operations</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% jobs.forEach(job => { %>
+                <tr>
+                <td><a href="<%= `/jobs/${job._id}`%>" ><%= job.title %></a></td>
+                <td><%= job.company %></td>
+                <td><%= job.location %></td>
+                <td id="operation">
+                    <a href="<%=`/jobs/${job._id}/edit` %>" class = "button"> Edit </a>
+                    &nbsp;
+                    <a href="<%= `jobs/${job._id}/delete?_method=DELETE` %>"
+                    onclick="return confirm('Are you sure you want to delete this job?')" class = "button">Delete</a>
+                </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+
+</div>
+
+<div class="button-wrapper">
+    <a class="btn btn-primary" href="/jobs/new">Post Job</a>
+</div>
+
+
+</body>
